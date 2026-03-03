@@ -262,6 +262,7 @@
       max-width: min(100%, 760px);
       max-height: 64vh;
       height: auto;
+      touch-action: none;
       display: block;
       margin: 0 auto;
       border-radius: 14px;
@@ -598,6 +599,8 @@
     let mustResumeManually = false;
     let pendingRestoreState = null;
     let reviveGrowthRemaining = 0;
+    let touchStartX = null;
+    let touchStartY = null;
     let gameLoop = null;
     let lastUpdateTime = 0;
     const moveInterval = 110;
@@ -731,10 +734,9 @@
         localStorage.setItem('snakeEconomyVersion', '2');
         saveEconomy();
       }
-
-      if (localStorage.getItem('snakeBonus110Granted') !== '1') {
-        balance += 110;
-        localStorage.setItem('snakeBonus110Granted', '1');
+      if (economyVersion < 3) {
+        balance = 0;
+        localStorage.setItem('snakeEconomyVersion', '3');
         saveEconomy();
       }
     }
@@ -1618,27 +1620,9 @@
       playTone(90, t + 0.2, 0.18, 'triangle', 0.05);
     }
 
-    document.addEventListener('keydown', (e) => {
-      resumeAudioContext();
-      if (gameOverPending || hasOpenOverlay()) return;
-      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key.toLowerCase();
-      const controls = {
-        arrowup: { x: 0, y: -1 },
-        arrowdown: { x: 0, y: 1 },
-        arrowleft: { x: -1, y: 0 },
-        arrowright: { x: 1, y: 0 },
-        w: { x: 0, y: -1 },
-        s: { x: 0, y: 1 },
-        a: { x: -1, y: 0 },
-        d: { x: 1, y: 0 },
-        'ц': { x: 0, y: -1 },
-        'ы': { x: 0, y: 1 },
-        'ф': { x: -1, y: 0 },
-        'в': { x: 1, y: 0 }
-      };
-
-      const newDir = controls[key];
+    function handleDirectionInput(newDir) {
       if (!newDir) return;
+      if (gameOverPending || hasOpenOverlay()) return;
 
       if (!started) {
         dir = newDir;
@@ -1659,6 +1643,28 @@
       if (newDir.x === -baseDir.x && newDir.y === -baseDir.y) return;
       queuedDir = newDir;
       directionLocked = true;
+    }
+
+    document.addEventListener('keydown', (e) => {
+      resumeAudioContext();
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key.toLowerCase();
+      const controls = {
+        arrowup: { x: 0, y: -1 },
+        arrowdown: { x: 0, y: 1 },
+        arrowleft: { x: -1, y: 0 },
+        arrowright: { x: 1, y: 0 },
+        w: { x: 0, y: -1 },
+        s: { x: 0, y: 1 },
+        a: { x: -1, y: 0 },
+        d: { x: 1, y: 0 },
+        'ц': { x: 0, y: -1 },
+        'ы': { x: 0, y: 1 },
+        'ф': { x: -1, y: 0 },
+        'в': { x: 1, y: 0 }
+      };
+
+      const newDir = controls[key];
+      handleDirectionInput(newDir);
     });
 
     sizeBtn.addEventListener('click', (e) => {
@@ -1805,8 +1811,41 @@
       }
     });
 
-    document.addEventListener('touchstart', () => {
+    canvas.addEventListener('touchstart', (e) => {
       resumeAudioContext();
+      if (!e.touches || e.touches.length === 0) return;
+      const t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+    }, { passive: true });
+
+    canvas.addEventListener('touchmove', (e) => {
+      if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+      if (touchStartX === null || touchStartY === null) return;
+      const t = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+      if (!t) {
+        touchStartX = null;
+        touchStartY = null;
+        return;
+      }
+
+      const dx = t.clientX - touchStartX;
+      const dy = t.clientY - touchStartY;
+      const threshold = 22;
+      let swipeDir = null;
+
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
+        swipeDir = dx > 0 ? { x: 1, y: 0 } : { x: -1, y: 0 };
+      } else if (Math.abs(dy) > threshold) {
+        swipeDir = dy > 0 ? { x: 0, y: 1 } : { x: 0, y: -1 };
+      }
+
+      handleDirectionInput(swipeDir);
+      touchStartX = null;
+      touchStartY = null;
     }, { passive: true });
 
     window.addEventListener('resize', () => {
