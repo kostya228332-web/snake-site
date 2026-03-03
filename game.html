@@ -102,6 +102,7 @@
     #sizeBtn,
     #soundBtn,
     #shopBtn,
+    #backBtn,
     #difficultyBtn {
       border: 1px solid rgba(167, 214, 251, 0.45);
       background: linear-gradient(180deg, rgba(145, 206, 255, 0.2), rgba(120, 224, 143, 0.16));
@@ -119,9 +120,17 @@
     #sizeBtn:hover,
     #soundBtn:hover,
     #shopBtn:hover,
+    #backBtn:hover,
     #difficultyBtn:hover {
       filter: brightness(1.08);
       transform: translateY(-1px);
+    }
+
+    #backBtn {
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .difficulty-wrap {
@@ -487,6 +496,7 @@
           <div id="difficultyMenu" class="difficulty-menu"></div>
         </div>
         <div id="fieldSize">Поле: 560x560</div>
+        <a id="backBtn" href="./index.html">На сайт</a>
         <button id="soundBtn" type="button">Звук: Вкл</button>
         <button id="shopBtn" type="button">Магазин</button>
         <button id="sizeBtn" type="button">Изменить размер</button>
